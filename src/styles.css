@@ -56,20 +56,20 @@ button {
 .sign {
   position: absolute;
   box-sizing: border-box;
-  height: 24px;
+  height: 26px;
   margin: 0;
   padding: 1px 4px;
   border: 2px solid var(--navy);
   background: var(--off-white);
   box-shadow: 0 2px 0 var(--slate);
-  font-size: 7px;
-  line-height: 8px;
+  font-size: 7.7px;
+  line-height: 8.5px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1;
+  z-index: 300; /* above walking birds (10 + y) so birds never steal sign clicks */
 }
 .sign-text {
   display: -webkit-box;
@@ -81,8 +81,8 @@ button {
 .sign:hover,
 .sign:focus-visible {
   height: auto;
-  min-height: 24px;
-  z-index: 6;
+  min-height: 26px;
+  z-index: 310;
 }
 .sign:hover .sign-text,
 .sign:focus-visible .sign-text {
@@ -118,8 +118,8 @@ button {
   position: absolute;
   left: 0;
   top: 0;
-  width: 28px;
-  height: 24px;
+  width: 24px;
+  height: 20px;
   padding: 0;
   margin: 0;
   border: 0;
@@ -129,7 +129,7 @@ button {
 }
 .bird img {
   position: absolute;
-  left: 6px;
+  left: 4px;
   bottom: 0;
   width: 16px;
   height: 14px;
@@ -151,22 +151,23 @@ button {
 .bubble {
   position: absolute;
   box-sizing: border-box;
-  padding: 2px 5px 3px;
+  padding: 2px 6px 3px;
   background: var(--off-white);
   border: 2px solid var(--navy);
   box-shadow: 2px 2px 0 rgba(10, 9, 45, 0.35);
-  font-size: 7px;
-  line-height: 9px;
+  font-size: 7.7px;
+  line-height: 10px;
+  width: max-content;
   text-align: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   pointer-events: none;
   z-index: 600;
 }
 .bubble-tail {
   position: absolute;
   bottom: -5px;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   background: var(--off-white);
   border-right: 2px solid var(--navy);
   border-bottom: 2px solid var(--navy);

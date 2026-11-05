@@ -5,8 +5,8 @@ import type { TreeStyle } from './themes';
 export const W = 480;
 export const H = 270;
 export const GROUND_Y = 236;
-export const SIGN_W = 84;
-export const SIGN_H = 24;
+export const SIGN_W = 92;
+export const SIGN_H = 26;
 /** Bird sprite size in world px (feet at bottom-center). */
 export const BIRD_W = 16;
 export const BIRD_H = 14;
@@ -81,9 +81,9 @@ export function layoutTree(cardCount: number, rng: Rng, style: TreeStyle): TreeL
     for (let r = 0; r < count; r++) {
       const tipY = Math.round((count === 1 ? 128 : yTop + (r * (yBot - yTop)) / (count - 1)) + stagger);
       const outer = twoCols && r % 2 === 1;
-      const reach = (outer ? 190 : 100) + Math.round(range(rng, -3, 3));
+      const reach = (outer ? 204 : 105) + Math.round(range(rng, -2, 2));
       const tip = { x: cx + side * reach, y: tipY };
-      const origin = { x: cx + side * 7, y: tipY + (outer ? 22 : 8) };
+      const origin = { x: cx + side * 7, y: tipY + (outer ? 26 : 8) };
       const signX = side < 0 ? tip.x - 8 : tip.x + 8 - SIGN_W;
       const sign = { x: signX, y: tipY + 12, w: SIGN_W, h: SIGN_H };
       const slot = branches.length;

@@ -186,7 +186,7 @@ export function Game({ cards }: { cards: Card[] }) {
               key={b.key}
               className={`bird${b.key === draggingKey ? ' dragging' : ''}${matched ? ' matched' : ''}`}
               style={{
-                transform: `translate(${Math.round(b.x - 14)}px, ${Math.round(b.y - 24)}px)`,
+                transform: `translate(${Math.round(b.x - 12)}px, ${Math.round(b.y - 20)}px)`,
                 zIndex: b.key === draggingKey ? 500 : 10 + Math.round(b.y),
               }}
               aria-label={matched ? `Matched bird: ${cards[b.key].back}` : `Bird. Press to hear it: ${cards[b.key].back}`}
@@ -237,21 +237,28 @@ export function Game({ cards }: { cards: Card[] }) {
 
 function Bubble({ bird, text }: { bird: Sim['birds'][number]; text: string }) {
   const t = text.length > BUBBLE_MAX_CHARS ? `${text.slice(0, BUBBLE_MAX_CHARS - 1)}…` : text;
-  const maxW = 150;
-  const estW = Math.min(maxW, t.length * 4.2 + 14);
-  const estH = 12 + Math.ceil((t.length * 4.2) / (maxW - 14)) * 9;
+  const maxW = 165;
+  const charW = 4.6;
+  // Estimates are only used to keep the bubble on-screen; actual width is max-content.
+  const estW = Math.min(maxW, t.length * charW + 20);
+  const estH = 13 + Math.ceil((t.length * charW) / (maxW - 16)) * 10;
   const headY = bird.y - 16;
   const below = headY - estH - 6 < 0;
-  const left = Math.max(4, Math.min(W - estW - 4, bird.x - estW / 2));
-  const tailX = Math.max(6, Math.min(estW - 12, bird.x - left - 4));
+  const center = Math.max(estW / 2 + 4, Math.min(W - estW / 2 - 4, bird.x));
+  const tailOffset = Math.max(-estW / 2 + 6, Math.min(estW / 2 - 10, bird.x - center));
   return (
     <div
       className={`bubble${below ? ' below' : ''}`}
-      style={{ left, top: below ? bird.y + 6 : headY - 6, width: estW, transform: below ? undefined : 'translateY(-100%)' }}
+      style={{
+        left: center,
+        top: below ? bird.y + 6 : headY - 6,
+        maxWidth: maxW,
+        transform: below ? 'translateX(-50%)' : 'translate(-50%, -100%)',
+      }}
       role="status"
     >
       {t}
-      <span className="bubble-tail" style={{ left: tailX }} />
+      <span className="bubble-tail" style={{ left: `calc(50% + ${tailOffset - 3.5}px)` }} />
     </div>
   );
 }
