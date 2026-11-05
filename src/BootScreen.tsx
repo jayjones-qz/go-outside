@@ -49,8 +49,7 @@ export function BootScreen({ exiting, onSkip }: { exiting: boolean; onSkip: () =
           </div>
         </div>
         <div className="boot-title">Quizlet</div>
-        <div className="boot-sub">GO OUTSIDE</div>
-        <div className="boot-skip">CLICK TO SKIP</div>
+        <div className="boot-sub">Click anywhere to get started</div>
       </div>
       <div className="crt crt-noise" />
       <div className="crt crt-scanlines" />

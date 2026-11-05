@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BIRD_H, BIRD_W, GROUND_Y, W, layoutTree, type Rect } from './layout';
+import { BIRD_H, BIRD_W, GROUND_Y, MIN_PERCH_Y, W, layoutTree, type Rect } from './layout';
 import { mulberry32 } from './rng';
 
 const overlap = (a: Rect, b: Rect) =>
@@ -26,6 +26,7 @@ describe('layoutTree', () => {
               if (i !== j) expect(overlap(seats[i], signs[j])).toBe(false);
             }
           expect(t.perches.length).toBeGreaterThanOrEqual(5);
+          for (const p of t.perches) expect(p.y).toBeGreaterThanOrEqual(MIN_PERCH_Y);
         }
       });
     }

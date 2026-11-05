@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { layoutTree } from '../layout';
 import { mulberry32 } from '../rng';
-import { AUTO_SPEAK_SECONDS, autoSpeak, createSim, resolveAttempt, sendToBranch, speak, step } from './sim';
+import { AUTO_SPEAK_SECONDS, autoSpeak, createSim, resolveAttempt, sendToBranch, speak, speakWindowSeconds, step } from './sim';
 
 const setup = (n = 3) => {
   const tree = layoutTree(n, mulberry32(42), 'broadleaf');
@@ -40,7 +40,7 @@ describe('sim', () => {
 
   it('speaking bird + branch click flies there and matches', () => {
     const { sim, onMatch, branchFor } = setup();
-    speak(sim, 2, 5);
+    speak(sim, 2);
     expect(sendToBranch(sim, 2, branchFor(2))).toBe(true);
     expect(sim.speaking).toBeNull();
     run(sim, 3);
@@ -59,10 +59,31 @@ describe('sim', () => {
     const { sim } = setup();
     sim.lastInteraction = 0;
     sim.now = AUTO_SPEAK_SECONDS - 1;
-    autoSpeak(sim, () => 3);
+    autoSpeak(sim);
     expect(sim.speaking).toBeNull();
     sim.now = AUTO_SPEAK_SECONDS + 0.1;
-    autoSpeak(sim, () => 3);
+    autoSpeak(sim);
     expect(sim.speaking).not.toBeNull();
+  });
+
+  it('speak window = unmatched count, min 3s', () => {
+    const { sim, branchFor } = setup(10);
+    sim.now = 100;
+    expect(speakWindowSeconds(sim)).toBe(10);
+    speak(sim, 0);
+    expect(sim.speaking!.until).toBe(110);
+    for (let k = 0; k < 8; k++) resolveAttempt(sim, sim.birds[k], branchFor(k));
+    expect(speakWindowSeconds(sim)).toBe(3); // 2 left → floor 3
+    for (let k = 0; k < 3; k++) resolveAttempt(sim, sim.birds[k], branchFor(k)); // no-op re-matches
+    expect(speakWindowSeconds(sim)).toBe(3);
+  });
+
+  it('speech expires after its window', () => {
+    const { sim } = setup(5);
+    speak(sim, 1);
+    run(sim, 4.9);
+    expect(sim.speaking).not.toBeNull();
+    run(sim, 0.3);
+    expect(sim.speaking).toBeNull();
   });
 });

@@ -10,6 +10,8 @@ export const SIGN_H = 26;
 /** Bird sprite size in world px (feet at bottom-center). */
 export const BIRD_W = 16;
 export const BIRD_H = 14;
+/** Lowest allowed feet-y for crown perches (bird hitbox is 20px tall). */
+export const MIN_PERCH_Y = 24;
 
 export interface Pt { x: number; y: number }
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -39,7 +41,7 @@ export function crownFor(style: TreeStyle, cx: number): Ellipse[] {
     case 'acacia':
       return [e(0, 50, 140, 13), e(-55, 41, 70, 10), e(50, 40, 72, 10)];
     case 'broadleaf':
-      return [e(0, 46, 118, 22), e(-58, 34, 56, 18), e(56, 33, 58, 19), e(0, 24, 52, 15)];
+      return [e(0, 50, 120, 20), e(-58, 42, 56, 16), e(56, 41, 58, 17), e(0, 34, 50, 12)];
     case 'cedar':
       return [e(0, 56, 118, 9), e(0, 43, 92, 8), e(0, 31, 64, 7), e(0, 20, 36, 6), e(0, 12, 14, 4)];
   }
@@ -101,11 +103,16 @@ export function layoutTree(cardCount: number, rng: Rng, style: TreeStyle): TreeL
   place(Math.ceil(n / 2), -1);
   place(Math.floor(n / 2), 1);
 
+  // Idle perches on the crown, low enough that the bird + its hitbox stay fully on-screen.
   const perches: Pt[] = [];
-  for (const dx of [-100, -70, -40, -12, 16, 44, 72, 100]) {
+  for (let dx = -130; dx <= 130; dx += 6) {
     const x = cx + dx;
-    const y = crownTopAt(crown, x);
-    if (y !== null) perches.push({ x, y: Math.round(y) + 1 });
+    const top = crownTopAt(crown, x);
+    if (top === null) continue;
+    const y = Math.round(top) + 1;
+    if (y < MIN_PERCH_Y) continue;
+    if (perches.length && x - perches[perches.length - 1].x < 24) continue;
+    perches.push({ x, y });
   }
 
   return { cx, crown, trunkTop: crown[0].cy, branches, perches };

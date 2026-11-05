@@ -248,19 +248,26 @@ export function dropBird(b: Bird) {
   }
 }
 
-export function speak(sim: Sim, key: number, seconds: number) {
-  sim.speaking = { key, until: sim.now + seconds };
+export const MIN_SPEAK_SECONDS = 3;
+
+/** Clickable window while a bird speaks: 1s per unmatched branch still showing, min 3s. */
+export function speakWindowSeconds(sim: Sim): number {
+  return Math.max(MIN_SPEAK_SECONDS, sim.birds.length - sim.matched.size);
+}
+
+export function speak(sim: Sim, key: number) {
+  sim.speaking = { key, until: sim.now + speakWindowSeconds(sim) };
 }
 
 /** If idle for AUTO_SPEAK_SECONDS, a random unmatched bird speaks. */
-export function autoSpeak(sim: Sim, seconds: (key: number) => number) {
+export function autoSpeak(sim: Sim) {
   const now = sim.now;
   if (sim.wonAt !== null || sim.speaking) return;
   if (now - sim.lastInteraction < AUTO_SPEAK_SECONDS || now - sim.lastAuto < AUTO_SPEAK_SECONDS) return;
   const pool = sim.birds.filter((b) => !sim.matched.has(b.key) && b.mode !== 'drag');
   if (!pool.length) return;
   const b = pool[Math.floor(Math.random() * pool.length)];
-  speak(sim, b.key, seconds(b.key));
+  speak(sim, b.key);
   sim.lastAuto = now;
 }
 

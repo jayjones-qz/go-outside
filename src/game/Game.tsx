@@ -29,7 +29,6 @@ export function Game({ cards }: { cards: Card[] }) {
   const theme = useMemo(() => pickTheme(seed), [seed]);
   const tree = useMemo(() => layoutTree(cards.length, mulberry32(seed), theme.tree), [cards.length, seed, theme]);
   const scene = useMemo(() => buildScene(theme, seed, tree), [theme, seed, tree]);
-  const speakSeconds = (key: number) => Math.min(9, Math.max(3, 2.5 + cards[key].back.length * 0.06));
 
   const onMatch = (key: number, elapsedMs: number) => postMatch(cards[key].id, elapsedMs);
   const simRef = useRef<Sim | null>(null);
@@ -49,7 +48,7 @@ export function Game({ cards }: { cards: Card[] }) {
       const now = nowS();
       const s = simRef.current!;
       step(s, Math.min(0.05, now - last), now);
-      autoSpeak(s, (k) => Math.min(9, Math.max(3, 2.5 + cards[k].back.length * 0.06)));
+      autoSpeak(s);
       last = now;
       setFrame((f) => (f + 1) % 1_000_000);
       raf = requestAnimationFrame(loop);
@@ -118,7 +117,7 @@ export function Game({ cards }: { cards: Card[] }) {
     touch();
     const b = sim.birds[d.key];
     if (!d.moved) {
-      if (!cancelled) speak(sim, d.key, speakSeconds(d.key));
+      if (!cancelled) speak(sim, d.key);
       return;
     }
     const idx = cancelled ? null : branchAt(toWorld(e));
@@ -199,7 +198,7 @@ export function Game({ cards }: { cards: Card[] }) {
                 // Keyboard activation only (pointer clicks are handled in pointerup).
                 if (e.detail === 0) {
                   touch();
-                  speak(sim, b.key, speakSeconds(b.key));
+                  speak(sim, b.key);
                 }
               }}
             >

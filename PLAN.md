@@ -83,7 +83,7 @@ window.addEventListener("message", (e) => {
 - One bird per card; each bird "carries" one card **back**.
 - Idle behavior: hop on ground, fly to/from the tree, perch on unoccupied spots.
 - Speech: one speech bubble per bird, showing its card back.
-  - Click bird → it speaks.
+  - Click bird → it speaks. Clickable window (bubble lifetime) = 1s per unmatched branch, min 3s (10 left → 10s).
   - Idle auto-speak: if no user click for ~10s, a random unmatched bird speaks.
 
 ### Matching
