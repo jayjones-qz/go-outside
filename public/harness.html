@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>go-outside harness</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; background: #f6f7fb; }
+      iframe { width: 960px; height: 540px; border: 2px solid #0a092d; display: block; }
+      pre { background: #0a092d; color: #ffcd1f; padding: 8px; height: 160px; overflow: auto; width: 944px; }
+      textarea { width: 956px; height: 60px; }
+    </style>
+  </head>
+  <body>
+    <h3>go-outside harness (host simulator)</h3>
+    <textarea id="cards">[{id:"a1",front:"perro",back:"dog"},{id:"a2",front:"gato",back:"cat"},{id:"a3",front:"caballo",back:"horse"},{id:"a4",front:"vaca",back:"cow"},{id:"a5",front:"pez",back:"fish"}]</textarea>
+    <div>
+      <label><input type="checkbox" id="b64" /> base64</label>
+      <button id="load">Load</button>
+    </div>
+    <iframe id="frame" title="go-outside"></iframe>
+    <pre id="log"></pre>
+    <script>
+      const frame = document.getElementById('frame');
+      const log = document.getElementById('log');
+      const load = () => {
+        const raw = document.getElementById('cards').value.trim();
+        const value = document.getElementById('b64').checked
+          ? btoa(String.fromCharCode(...new TextEncoder().encode(raw)))
+          : encodeURIComponent(raw);
+        frame.src = '/?cards=' + value;
+      };
+      document.getElementById('load').onclick = load;
+      window.addEventListener('message', (e) => {
+        if (e.source !== frame.contentWindow) return;
+        if (e.data?.source !== 'go-outside') return;
+        log.textContent = `${new Date().toISOString()} ${e.origin} ${JSON.stringify(e.data)}\n` + log.textContent;
+      });
+      load();
+    </script>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 # go-outside — Plan
 
-Status: **draft, collecting requirements**. No code yet.
+Status: **v1 implemented** (see Questions.md for defaults pending confirmation).
 
 ## Goal
 Single-page TypeScript/React app, deployed on Vercel, rendered inside an iFrame by a host ("activity_item"). Reads flashcards from the URL query and displays them.
@@ -87,7 +87,8 @@ window.addEventListener("message", (e) => {
   - Idle auto-speak: if no user click for ~10s, a random unmatched bird speaks.
 
 ### Matching
-- **Drag** a bird onto a branch sign, **or** while a bird is speaking, **click** a branch → bird flies there.
+- **Primary (required):** while a bird is speaking, **click** a branch → bird flies there.
+- Optional: **drag** a bird onto a branch sign (implemented; not required).
 - Correct (bird.cardId === branch.cardId): bird lands, flaps wings, stays seated (matched, no longer interactive).
 - Wrong: bird falls off branch, returns to idle.
 

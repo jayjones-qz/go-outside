@@ -1,0 +1,252 @@
+:root {
+  --indigo: #4255ff;
+  --deep-indigo: #423ed8;
+  --yellow: #ffcd1f;
+  --navy: #0a092d;
+  --slate: #282e3e;
+  --off-white: #f6f7fb;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Pixelify Sans', system-ui, sans-serif;
+  background: var(--navy);
+  color: var(--navy);
+  -webkit-font-smoothing: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* ---------- signs ---------- */
+
+.sign {
+  position: absolute;
+  box-sizing: border-box;
+  height: 24px;
+  margin: 0;
+  padding: 1px 4px;
+  border: 2px solid var(--navy);
+  background: var(--off-white);
+  box-shadow: 0 2px 0 var(--slate);
+  font-size: 7px;
+  line-height: 8px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1;
+}
+.sign-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.sign:hover,
+.sign:focus-visible {
+  height: auto;
+  min-height: 24px;
+  z-index: 6;
+}
+.sign:hover .sign-text,
+.sign:focus-visible .sign-text {
+  -webkit-line-clamp: unset;
+}
+.sign:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 1px;
+}
+.sign.targetable {
+  border-color: var(--indigo);
+  animation: pulse 0.8s steps(2) infinite;
+}
+.sign.hover {
+  background: var(--yellow);
+  border-color: var(--indigo);
+}
+.sign.matched {
+  background: var(--indigo);
+  color: var(--off-white);
+  border-color: var(--navy);
+  cursor: default;
+}
+@keyframes pulse {
+  50% {
+    box-shadow: 0 2px 0 var(--slate), 0 0 0 2px var(--yellow);
+  }
+}
+
+/* ---------- birds ---------- */
+
+.bird {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+.bird img {
+  position: absolute;
+  left: 6px;
+  bottom: 0;
+  width: 16px;
+  height: 14px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.bird.dragging {
+  cursor: grabbing;
+}
+.bird.matched {
+  cursor: pointer;
+}
+.bird:focus-visible {
+  outline: 2px solid var(--yellow);
+}
+
+/* ---------- speech bubble ---------- */
+
+.bubble {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 2px 5px 3px;
+  background: var(--off-white);
+  border: 2px solid var(--navy);
+  box-shadow: 2px 2px 0 rgba(10, 9, 45, 0.35);
+  font-size: 7px;
+  line-height: 9px;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  z-index: 600;
+}
+.bubble-tail {
+  position: absolute;
+  bottom: -5px;
+  width: 6px;
+  height: 6px;
+  background: var(--off-white);
+  border-right: 2px solid var(--navy);
+  border-bottom: 2px solid var(--navy);
+  transform: rotate(45deg);
+}
+.bubble.below .bubble-tail {
+  bottom: auto;
+  top: -5px;
+  transform: rotate(225deg);
+}
+
+/* ---------- hud / overlays ---------- */
+
+.hud {
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  padding: 1px 5px;
+  background: var(--off-white);
+  border: 2px solid var(--navy);
+  font-size: 8px;
+  font-weight: 700;
+  z-index: 650;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 9, 45, 0.35);
+  z-index: 700;
+}
+
+.panel {
+  background: var(--off-white);
+  border: 3px solid var(--navy);
+  box-shadow: 4px 4px 0 var(--navy);
+  padding: 10px 14px;
+  text-align: center;
+}
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+.panel-sub {
+  font-size: 9px;
+  margin-top: 4px;
+}
+
+.btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  font-size: 9px;
+  background: var(--indigo);
+  color: var(--off-white);
+  border: 2px solid var(--navy);
+  box-shadow: 0 2px 0 var(--navy);
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:hover {
+  background: var(--deep-indigo);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--yellow);
+}
+
+.error {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.error .panel-title {
+  font-size: 22px;
+}
+.error .panel-sub,
+.error .btn {
+  font-size: 14px;
+}
