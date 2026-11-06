@@ -1,34 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadCardsFromLocation, sampleUrl } from './parseCards';
 import { Game } from './game/Game';
-import { BOOT_EXIT_MS, BOOT_MS, BootScreen } from './BootScreen';
+import { BOOT_MS, BootScreen, FADE_MS, PIXELATE_MS } from './BootScreen';
 
-type Phase = 'boot' | 'exiting' | 'ready';
+type Phase = 'boot' | 'pixelate' | 'fade' | 'ready';
 
 export function App() {
   const result = useMemo(() => loadCardsFromLocation(window.location), []);
   const [phase, setPhase] = useState<Phase>('boot');
 
-  const skip = useCallback(() => setPhase((p) => (p === 'boot' ? 'exiting' : p)), []);
+  const skip = useCallback(() => setPhase((p) => (p === 'boot' ? 'pixelate' : p)), []);
 
   useEffect(() => {
-    if (phase === 'boot') {
-      const t = setTimeout(skip, BOOT_MS - BOOT_EXIT_MS);
-      return () => clearTimeout(t);
-    }
-    if (phase === 'exiting') {
-      const t = setTimeout(() => setPhase('ready'), BOOT_EXIT_MS);
-      return () => clearTimeout(t);
-    }
-  }, [phase, skip]);
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const next: Partial<Record<Phase, [Phase, number]>> = {
+      boot: ['pixelate', BOOT_MS],
+      pixelate: ['fade', reduced ? 0 : PIXELATE_MS],
+      fade: ['ready', FADE_MS],
+    };
+    const step = next[phase];
+    if (!step) return;
+    const t = setTimeout(() => setPhase(step[0]), step[1]);
+    return () => clearTimeout(t);
+  }, [phase]);
 
-  // Game mounts as the boot screen powers off, so its clock (elapsedMs, auto-speak) excludes the boot.
-  const showContent = phase !== 'boot';
+  // Game mounts when the crossfade starts, so its clock (elapsedMs, auto-speak) excludes the boot.
+  const showContent = phase === 'fade' || phase === 'ready';
 
   return (
     <>
       {showContent && (result.error ? <ErrorScreen error={result.error} /> : <Game cards={result.cards} />)}
-      {phase !== 'ready' && <BootScreen exiting={phase === 'exiting'} onSkip={skip} />}
+      {phase !== 'ready' && <BootScreen phase={phase} onSkip={skip} />}
     </>
   );
 }
