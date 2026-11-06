@@ -321,14 +321,6 @@ button {
   clip-path: inset(0 100% 0 0);
   animation: type-in 0.6s steps(7) 1.25s forwards;
 }
-.boot-sub {
-  font-family: 'Pixelify Sans', monospace;
-  font-size: 3.6vmin;
-  letter-spacing: 0.4vmin;
-  color: var(--yellow);
-  opacity: 0;
-  animation: pop-in 0.01s linear 0.5s forwards, blink 0.9s steps(1) 1.95s infinite;
-}
 
 /* full-screen CRT artifacts */
 .crt {
@@ -386,9 +378,6 @@ button {
 @keyframes type-in {
   to { clip-path: inset(0 0 0 0); }
 }
-@keyframes pop-in {
-  to { opacity: 1; }
-}
 @keyframes blink {
   0% { opacity: 0.85; }
   50% { opacity: 0; }
@@ -408,5 +397,4 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .boot-spinner, .boot-tube, .crt-noise, .crt-roll { animation: none; }
   .boot-title { animation-duration: 0.01s; animation-delay: 0s; }
-  .boot-sub { animation: none; opacity: 1; }
 }
