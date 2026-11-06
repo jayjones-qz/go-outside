@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
 import type { Card } from '../parseCards';
-import { BIRD_H, GROUND_Y, H, SIGN_H, SIGN_W, W, layoutTree, type Pt } from '../layout';
+import { BIRD_H, SIGN_H, SIGN_W, layoutTree, type Pt } from '../layout';
 import { hashString, mulberry32 } from '../rng';
 import { pickTheme } from '../themes';
 import { buildScene } from '../scene/drawScene';
 import { Background } from '../scene/Background';
 import { birdSprite } from '../sprites';
 import { postMatch } from '../messaging';
-import { autoSpeak, birdFrame, createSim, dropBird, resolveAttempt, sendToBranch, speak, step, type Sim } from './sim';
-import { useViewportScale } from './useViewportScale';
+import { autoSpeak, birdFrame, createSim, dropBird, relayout, resolveAttempt, sendToBranch, speak, step, type Sim } from './sim';
+import { useViewport } from './useViewportScale';
 
 const nowS = () => performance.now() / 1000;
 const BUBBLE_MAX_CHARS = 140;
@@ -27,18 +27,26 @@ interface Drag {
 export function Game({ cards }: { cards: Card[] }) {
   const seed = useMemo(() => seedFromCards(cards), [cards]);
   const theme = useMemo(() => pickTheme(seed), [seed]);
-  const tree = useMemo(() => layoutTree(cards.length, mulberry32(seed), theme.tree), [cards.length, seed, theme]);
+  const { dims, scale } = useViewport();
+  const { w: W, h: H, groundY: GROUND_Y } = dims;
+  const tree = useMemo(
+    () => layoutTree(cards.length, mulberry32(seed), theme.tree, dims),
+    [cards.length, seed, theme, dims],
+  );
   const scene = useMemo(() => buildScene(theme, seed, tree), [theme, seed, tree]);
 
   const onMatch = (key: number, elapsedMs: number) => postMatch(cards[key].id, elapsedMs);
+  const dragRef = useRef<Drag | null>(null);
   const simRef = useRef<Sim | null>(null);
   if (simRef.current === null) simRef.current = createSim(cards.length, tree, nowS(), onMatch);
   const sim = simRef.current;
   sim.onMatch = onMatch;
+  if (sim.tree !== tree) {
+    dragRef.current = null;
+    relayout(sim, tree);
+  }
 
-  const dragRef = useRef<Drag | null>(null);
   const worldRef = useRef<HTMLDivElement>(null);
-  const scale = useViewportScale();
   const [, setFrame] = useState(0);
 
   useEffect(() => {
@@ -122,7 +130,7 @@ export function Game({ cards }: { cards: Card[] }) {
     }
     const idx = cancelled ? null : branchAt(toWorld(e));
     if (idx !== null) resolveAttempt(sim, b, idx);
-    else dropBird(b);
+    else dropBird(sim, b);
   };
 
   const onSignClick = (branchIdx: number) => {
@@ -212,7 +220,7 @@ export function Game({ cards }: { cards: Card[] }) {
           );
         })}
 
-        {speakingKey !== null && <Bubble bird={sim.birds[speakingKey]} text={cards[speakingKey].back} />}
+        {speakingKey !== null && <Bubble bird={sim.birds[speakingKey]} text={cards[speakingKey].back} worldW={W} />}
 
         <div className="hud" aria-live="polite">
           {sim.matched.size}/{cards.length}
@@ -234,7 +242,7 @@ export function Game({ cards }: { cards: Card[] }) {
   );
 }
 
-function Bubble({ bird, text }: { bird: Sim['birds'][number]; text: string }) {
+function Bubble({ bird, text, worldW }: { bird: Sim['birds'][number]; text: string; worldW: number }) {
   const t = text.length > BUBBLE_MAX_CHARS ? `${text.slice(0, BUBBLE_MAX_CHARS - 1)}…` : text;
   const maxW = 165;
   const charW = 4.6;
@@ -243,7 +251,7 @@ function Bubble({ bird, text }: { bird: Sim['birds'][number]; text: string }) {
   const estH = 13 + Math.ceil((t.length * charW) / (maxW - 16)) * 10;
   const headY = bird.y - 16;
   const below = headY - estH - 6 < 0;
-  const center = Math.max(estW / 2 + 4, Math.min(W - estW / 2 - 4, bird.x));
+  const center = Math.max(estW / 2 + 4, Math.min(worldW - estW / 2 - 4, bird.x));
   const tailOffset = Math.max(-estW / 2 + 6, Math.min(estW / 2 - 10, bird.x - center));
   return (
     <div

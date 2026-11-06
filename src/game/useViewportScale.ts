@@ -1,15 +1,38 @@
 import { useEffect, useState } from 'react';
-import { H, W } from '../layout';
+import { computeDims, type Dims } from '../layout';
 
-const calc = () => Math.min(window.innerWidth / W, window.innerHeight / H);
+export interface Viewport {
+  dims: Dims;
+  scale: number;
+}
 
-/** Scale factor that fits the W×H world into the iframe (letterboxed). */
-export function useViewportScale(): number {
-  const [scale, setScale] = useState(calc);
+function measure(prev?: Viewport): Viewport {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const next = computeDims(vw, vh);
+  const dims = prev && prev.dims.w === next.w && prev.dims.h === next.h ? prev.dims : next;
+  return { dims, scale: Math.min(vw / dims.w, vh / dims.h) };
+}
+
+/**
+ * World dims + scale for the iframe. Width is 480 (landscape) or 280 (portrait);
+ * height stretches to fill the viewport, letterboxing only at extreme aspect ratios.
+ */
+export function useViewport(): Viewport {
+  const [vp, setVp] = useState(() => measure());
   useEffect(() => {
-    const on = () => setScale(calc());
+    let raf = 0;
+    const on = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setVp((p) => measure(p)));
+    };
     window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
+    window.addEventListener('orientationchange', on);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', on);
+      window.removeEventListener('orientationchange', on);
+    };
   }, []);
-  return scale;
+  return vp;
 }

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { H, W } from '../layout';
 import { drawFrame, renderStatic, type SceneSpec } from './drawScene';
 
 export function Background({ scene }: { scene: SceneSpec }) {
@@ -19,5 +18,5 @@ export function Background({ scene }: { scene: SceneSpec }) {
     return () => cancelAnimationFrame(raf);
   }, [scene, layers]);
 
-  return <canvas ref={ref} className="bg" width={W} height={H} aria-hidden="true" />;
+  return <canvas ref={ref} className="bg" width={scene.tree.dims.w} height={scene.tree.dims.h} aria-hidden="true" />;
 }

@@ -1,4 +1,4 @@
-import { GROUND_Y, H, SIGN_W, W, branchYAt, type TreeLayout } from '../layout';
+import { SIGN_W, branchYAt, type Dims, type TreeLayout } from '../layout';
 import { int, mulberry32, pick, range } from '../rng';
 import { QZ, type DecorKind, type Theme } from '../themes';
 
@@ -53,10 +53,14 @@ function line(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, th0: num
   }
 }
 
-function makeCanvas(): [HTMLCanvasElement, Ctx] {
+const dimsOf = (d: Dims) => ({ W: d.w, H: d.h, GROUND_Y: d.groundY });
+/** Theme hill bases are authored against the 480×270 world (ground at 236). */
+const BASE_GROUND = 236;
+
+function makeCanvas(d: Dims): [HTMLCanvasElement, Ctx] {
   const c = document.createElement('canvas');
-  c.width = W;
-  c.height = H;
+  c.width = d.w;
+  c.height = d.h;
   const ctx = c.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
   return [c, ctx];
@@ -77,22 +81,23 @@ const BAYER = [
 // ---------- scene spec (seeded) ----------
 
 export function buildScene(theme: Theme, seed: number, tree: TreeLayout): SceneSpec {
+  const { W, GROUND_Y } = dimsOf(tree.dims);
   const r = mulberry32(seed ^ 0x9e3779b9);
   const side = r() < 0.5 ? -1 : 1;
   const cliffW = 56;
-  const cliff = { x: side < 0 ? 0 : W - cliffW, w: cliffW, top: int(r, 112, 138) };
+  const cliff = { x: side < 0 ? 0 : W - cliffW, w: cliffW, top: GROUND_Y - int(r, 98, 124) };
   const fall = { x: cliff.x + 20, w: 14 };
   const sun = { x: side < 0 ? range(r, 300, 440) : range(r, 40, 180), y: range(r, 24, 48) };
 
   const clouds: Cloud[] = Array.from({ length: int(r, 3, 5) }, () => ({
     x: range(r, 0, W),
-    y: range(r, 10, 90),
+    y: range(r, 10, Math.min(90, GROUND_Y * 0.35)),
     speed: range(r, 2, 6),
     blobs: Array.from({ length: int(r, 3, 5) }, () => ({ dx: range(r, -16, 16), dy: range(r, -3, 3), r: int(r, 5, 10) })),
   }));
 
   const flyers: Flyer[] = Array.from({ length: int(r, 3, 5) }, () => ({
-    y: range(r, 30, 110),
+    y: range(r, 30, Math.max(40, Math.min(110, GROUND_Y * 0.45))),
     speed: range(r, 14, 28) * (r() < 0.5 ? -1 : 1),
     phase: range(r, 0, W),
     amp: range(r, 2, 6),
@@ -120,7 +125,8 @@ export function renderStatic(spec: SceneSpec): StaticLayers {
 }
 
 function renderSky(spec: SceneSpec): HTMLCanvasElement {
-  const [c, ctx] = makeCanvas();
+  const { W, GROUND_Y } = dimsOf(spec.tree.dims);
+  const [c, ctx] = makeCanvas(spec.tree.dims);
   const { theme } = spec;
   const stops = theme.sky.map(hexToRgb);
   const img = ctx.createImageData(W, GROUND_Y);
@@ -144,7 +150,8 @@ function renderSky(spec: SceneSpec): HTMLCanvasElement {
 }
 
 function renderLand(spec: SceneSpec): HTMLCanvasElement {
-  const [c, ctx] = makeCanvas();
+  const { W, H, GROUND_Y } = dimsOf(spec.tree.dims);
+  const [c, ctx] = makeCanvas(spec.tree.dims);
   const { theme, cliff, fall } = spec;
   const r = mulberry32(spec.seed ^ 0x51ed27);
 
@@ -152,16 +159,16 @@ function renderLand(spec: SceneSpec): HTMLCanvasElement {
   theme.hills.forEach((hill, hi) => {
     const phases = spec.hillPhases[hi];
     for (let x = 0; x < W; x++) {
-      let h = hill.base;
+      let h = hill.base - BASE_GROUND + GROUND_Y;
       hill.waves.forEach(([a, f], wi) => (h += a * Math.sin(x * f + phases[wi])));
       h = Math.round(h);
       rect(ctx, x, h, 1, GROUND_Y - h, hill.color);
       if (hill.ridge) rect(ctx, x, h, 1, 1, hill.ridge);
-      if (hill.snow && h < hill.base - 14) rect(ctx, x, h, 1, 3 + ((x * 13) % 3), QZ.offWhite);
+      if (hill.snow && h < hill.base - BASE_GROUND + GROUND_Y - 14) rect(ctx, x, h, 1, 3 + ((x * 13) % 3), QZ.offWhite);
     }
     if (hill.pines) {
       for (let x = int(r, 0, 6); x < W; x += int(r, 4, 9)) {
-        let h = hill.base;
+        let h = hill.base - BASE_GROUND + GROUND_Y;
         hill.waves.forEach(([a, f], wi) => (h += a * Math.sin(x * f + phases[wi])));
         pine(ctx, x, Math.round(h) + 3, int(r, 6, 11), theme.leafDark, theme.leaf);
       }
@@ -265,7 +272,8 @@ function drawDecor(ctx: Ctx, d: Decor, t: Theme) {
 }
 
 function renderTree(spec: SceneSpec): HTMLCanvasElement {
-  const [c, ctx] = makeCanvas();
+  const { GROUND_Y } = dimsOf(spec.tree.dims);
+  const [c, ctx] = makeCanvas(spec.tree.dims);
   const { theme, tree } = spec;
   const r = mulberry32(spec.seed ^ 0x7a3e);
 
@@ -336,6 +344,7 @@ function renderTree(spec: SceneSpec): HTMLCanvasElement {
 // ---------- per-frame ----------
 
 export function drawFrame(ctx: Ctx, spec: SceneSpec, layers: StaticLayers, t: number) {
+  const { W, H, GROUND_Y } = dimsOf(spec.tree.dims);
   const { theme, cliff, fall } = spec;
   ctx.clearRect(0, 0, W, H);
   ctx.drawImage(layers.sky, 0, 0);

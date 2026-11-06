@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { layoutTree } from '../layout';
+import { computeDims, layoutTree } from '../layout';
 import { mulberry32 } from '../rng';
-import { AUTO_SPEAK_SECONDS, autoSpeak, createSim, resolveAttempt, sendToBranch, speak, speakWindowSeconds, step } from './sim';
+import { AUTO_SPEAK_SECONDS, autoSpeak, createSim, relayout, resolveAttempt, sendToBranch, speak, speakWindowSeconds, step } from './sim';
 
 const setup = (n = 3) => {
   const tree = layoutTree(n, mulberry32(42), 'broadleaf');
@@ -85,5 +85,32 @@ describe('sim', () => {
     expect(sim.speaking).not.toBeNull();
     run(sim, 0.3);
     expect(sim.speaking).toBeNull();
+  });
+
+  it('relayout (rotate to portrait) re-seats matched birds and keeps others on the new ground', () => {
+    const { sim, branchFor } = setup(6);
+    resolveAttempt(sim, sim.birds[2], branchFor(2));
+    const dims = computeDims(390, 844);
+    const tree = layoutTree(6, mulberry32(42), 'broadleaf', dims);
+    relayout(sim, tree);
+    const seat = tree.branches.find((b) => b.cardIndex === 2)!.seat;
+    expect([sim.birds[2].x, sim.birds[2].y]).toEqual([seat.x, seat.y]);
+    for (const b of sim.birds) {
+      expect(b.x).toBeLessThanOrEqual(dims.w);
+      if (b.key !== 2) expect(b.y).toBeGreaterThan(dims.groundY);
+    }
+    expect(sim.matched.has(2)).toBe(true);
+  });
+
+  it('relayout keeps an in-flight click attempt and it still matches', () => {
+    const { sim, onMatch, branchFor } = setup(4);
+    speak(sim, 1);
+    sendToBranch(sim, 1, branchFor(1));
+    run(sim, 0.2);
+    const tree = layoutTree(4, mulberry32(42), 'broadleaf', computeDims(390, 844));
+    relayout(sim, tree);
+    run(sim, 3);
+    expect(sim.birds[1].mode).toBe('matched');
+    expect(onMatch).toHaveBeenCalledTimes(1);
   });
 });

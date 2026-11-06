@@ -71,7 +71,7 @@ window.addEventListener("message", (e) => {
 ### Look
 - Pixel art, palette close to Quizlet brand. Palette (confirmed): indigo `#4255FF`, deep indigo `#423ED8`, yellow `#FFCD1F`, navy `#0A092D`, slate `#282E3E`, off-white `#F6F7FB`, plus per-theme naturals (greens, sands, browns, water blues).
 - Font: `Pixelify Sans` via `@fontsource/pixelify-sans` (self-hosted, OFL; readable lowercase for card text).
-- Low internal resolution (e.g. 320×180), integer-scaled to fill the iframe; `image-rendering: pixelated`. Letterbox to keep aspect ratio.
+- World size adapts to the iframe (`computeDims` in `src/layout.ts`): width 480 (landscape) or 280 (portrait, h/w ≥ 1.15); height stretches to fill the viewport (wide: 270–552, narrow: 360–672), letterbox only beyond. Scaled with `image-rendering: pixelated`. Rotation/resize re-lays out the tree; matched birds re-seat, in-flight attempts retarget.
 
 ### Scene
 - **Seeded**: seed = hash of the card set (ids + fronts) → deterministic PRNG (mulberry32). Same cards → same scene.

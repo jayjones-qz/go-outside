@@ -1,5 +1,5 @@
 import { BIRD_VARIANTS, type BirdFrame } from '../sprites';
-import { GROUND_Y, H, W, type Pt, type TreeLayout } from '../layout';
+import { type Dims, type Pt, type TreeLayout } from '../layout';
 
 export type BirdMode = 'ground' | 'hop' | 'fly' | 'perch' | 'drag' | 'wobble' | 'fall' | 'matched';
 export type Method = 'drag' | 'click';
@@ -45,17 +45,18 @@ export interface Sim {
 }
 
 export const AUTO_SPEAK_SECONDS = 10;
-const GY_MIN = GROUND_Y + 8;
-const GY_MAX = H - 4;
+const gyMin = (d: Dims) => d.groundY + 8;
+const gyMax = (d: Dims) => d.h - 4;
 const GRAVITY = 520;
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 export function createSim(count: number, tree: TreeLayout, now: number, onMatch: Sim['onMatch']): Sim {
+  const d = tree.dims;
   const birds: Bird[] = Array.from({ length: count }, (_, key) => {
-    const gy = rand(GY_MIN, GY_MAX);
-    const x = rand(24, W - 24);
+    const gy = rand(gyMin(d), gyMax(d));
+    const x = rand(24, d.w - 24);
     return {
       key,
       variant: key % BIRD_VARIANTS,
@@ -117,21 +118,22 @@ function freePerches(sim: Sim): number[] {
   return sim.tree.perches.map((_, i) => i).filter((i) => !taken.has(i));
 }
 
-function randomGround(b: Bird): Pt {
-  b.gy = rand(GY_MIN, GY_MAX);
-  return { x: rand(20, W - 20), y: b.gy };
+function randomGround(d: Dims, b: Bird): Pt {
+  b.gy = rand(gyMin(d), gyMax(d));
+  return { x: rand(20, d.w - 20), y: b.gy };
 }
 
-function startFall(b: Bird, vx: number) {
+function startFall(d: Dims, b: Bird, vx: number) {
   b.mode = 'fall';
   b.vx = vx;
   b.vy = -40;
   b.rot = 0;
   b.perch = null;
-  if (b.gy < GY_MIN) b.gy = rand(GY_MIN, GY_MAX);
+  if (b.gy < gyMin(d) || b.gy > gyMax(d)) b.gy = rand(gyMin(d), gyMax(d));
 }
 
 export function step(sim: Sim, dt: number, now: number) {
+  const d = sim.tree.dims;
   sim.now = now;
   if (sim.speaking && now > sim.speaking.until) sim.speaking = null;
 
@@ -144,14 +146,14 @@ export function step(sim: Sim, dt: number, now: number) {
         const free = freePerches(sim);
         if (roll < 0.55) {
           const dir = Math.random() < 0.5 ? -1 : 1;
-          b.gy = clamp(b.gy + rand(-4, 4), GY_MIN, GY_MAX);
-          startMove(b, { x: clamp(b.x + dir * rand(8, 36), 16, W - 16), y: b.gy }, 'hop', { kind: 'ground' });
+          b.gy = clamp(b.gy + rand(-4, 4), gyMin(d), gyMax(d));
+          startMove(b, { x: clamp(b.x + dir * rand(8, 36), 16, d.w - 16), y: b.gy }, 'hop', { kind: 'ground' });
         } else if (roll < 0.85 && free.length) {
           const p = free[Math.floor(Math.random() * free.length)];
           b.perch = p;
           startMove(b, sim.tree.perches[p], 'fly', { kind: 'perch' });
         } else {
-          startMove(b, randomGround(b), 'fly', { kind: 'ground' });
+          startMove(b, randomGround(d, b), 'fly', { kind: 'ground' });
         }
         break;
       }
@@ -172,16 +174,16 @@ export function step(sim: Sim, dt: number, now: number) {
         b.timer -= dt;
         if (b.timer <= 0) {
           b.perch = null;
-          startMove(b, randomGround(b), 'fly', { kind: 'ground' });
+          startMove(b, randomGround(d, b), 'fly', { kind: 'ground' });
         }
         break;
       case 'wobble':
         b.timer -= dt;
-        if (b.timer <= 0) startFall(b, (Math.random() < 0.5 ? -1 : 1) * rand(25, 45));
+        if (b.timer <= 0) startFall(d, b, (Math.random() < 0.5 ? -1 : 1) * rand(25, 45));
         break;
       case 'fall':
         b.vy += GRAVITY * dt;
-        b.x = clamp(b.x + b.vx * dt, 12, W - 12);
+        b.x = clamp(b.x + b.vx * dt, 12, d.w - 12);
         b.y += b.vy * dt;
         b.rot += 540 * dt * (b.vx < 0 ? -1 : 1);
         if (b.vy > 0 && b.y >= b.gy) {
@@ -237,14 +239,44 @@ export function resolveAttempt(sim: Sim, b: Bird, branchIdx: number) {
 }
 
 /** Released mid-air, not over a sign. */
-export function dropBird(b: Bird) {
-  if (b.y >= GROUND_Y + 4) {
-    b.gy = clamp(b.y, GY_MIN, GY_MAX);
+export function dropBird(sim: Sim, b: Bird) {
+  const d = sim.tree.dims;
+  if (b.y >= d.groundY + 4) {
+    b.gy = clamp(b.y, gyMin(d), gyMax(d));
     b.y = b.gy;
     b.mode = 'ground';
     b.timer = 0.6;
   } else {
-    startFall(b, 0);
+    startFall(d, b, 0);
+  }
+}
+
+/** Viewport changed → new tree layout. Matched birds re-seat; others land on the new ground. */
+export function relayout(sim: Sim, tree: TreeLayout) {
+  sim.tree = tree;
+  sim.hoverBranch = null;
+  const d = tree.dims;
+  for (const b of sim.birds) {
+    b.perch = null;
+    b.rot = 0;
+    if (sim.matched.has(b.key)) {
+      const br = tree.branches.find((x) => x.cardIndex === b.key)!;
+      b.x = br.seat.x;
+      b.y = br.seat.y;
+      b.facing = br.side;
+    } else if (b.mode === 'fly' && b.dest.kind === 'attempt') {
+      // Keep an in-flight branch attempt alive: retarget the same branch's new seat.
+      const dest = b.dest;
+      b.x = clamp(b.x, 16, d.w - 16);
+      b.y = clamp(b.y, 16, d.h - 4);
+      startMove(b, tree.branches[dest.branch].seat, 'fly', dest);
+    } else {
+      b.gy = rand(gyMin(d), gyMax(d));
+      b.x = clamp(b.x, 16, d.w - 16);
+      b.y = b.gy;
+      b.mode = 'ground';
+      b.timer = rand(0.2, 1.5);
+    }
   }
 }
 
